@@ -111,16 +111,12 @@ static void slam_temp_string(SlamId id, char *buf, size_t len) {
   }
 }
 
-// En-tête de zone : abréviation seule, ou "<abbr>  J-12" / "<abbr>  LIVE" si focus.
-static void slam_header_string(SlamId id, const SlamFocus *focus, char *buf, size_t len) {
-  if (focus->id == id) {
-    if (focus->live) {
-      snprintf(buf, len, "%s LIVE", SLAMS[id].abbr);
-    } else {
-      snprintf(buf, len, "%s J-%d", SLAMS[id].abbr, focus->days_until);
-    }
+// Compte à rebours du tournoi focus : "LIVE" ou "J-12".
+static void slam_countdown_string(const SlamFocus *focus, char *buf, size_t len) {
+  if (focus->live) {
+    snprintf(buf, len, "LIVE");
   } else {
-    snprintf(buf, len, "%s", SLAMS[id].abbr);
+    snprintf(buf, len, "J-%d", focus->days_until);
   }
 }
 
@@ -129,25 +125,25 @@ static void slam_header_string(SlamId id, const SlamFocus *focus, char *buf, siz
 // ---------------------------------------------------------------------------
 static void draw_day_night(GContext *ctx, GPoint c, bool day, GColor surface, GColor icon) {
   if (day) {
-    // Soleil : disque + rayons
+    // Soleil : disque + rayons (légèrement agrandi)
     graphics_context_set_fill_color(ctx, icon);
-    graphics_fill_circle(ctx, c, 4);
+    graphics_fill_circle(ctx, c, 5);
     graphics_context_set_stroke_color(ctx, icon);
-    graphics_context_set_stroke_width(ctx, 1);
+    graphics_context_set_stroke_width(ctx, 2);
     for (int i = 0; i < 8; i++) {
       int32_t a = TRIG_MAX_ANGLE * i / 8;
-      GPoint p1 = { c.x + (6 * cos_lookup(a) / TRIG_MAX_RATIO),
-                    c.y + (6 * sin_lookup(a) / TRIG_MAX_RATIO) };
-      GPoint p2 = { c.x + (8 * cos_lookup(a) / TRIG_MAX_RATIO),
-                    c.y + (8 * sin_lookup(a) / TRIG_MAX_RATIO) };
+      GPoint p1 = { c.x + (7 * cos_lookup(a) / TRIG_MAX_RATIO),
+                    c.y + (7 * sin_lookup(a) / TRIG_MAX_RATIO) };
+      GPoint p2 = { c.x + (10 * cos_lookup(a) / TRIG_MAX_RATIO),
+                    c.y + (10 * sin_lookup(a) / TRIG_MAX_RATIO) };
       graphics_draw_line(ctx, p1, p2);
     }
   } else {
-    // Lune : disque évidé par un disque couleur surface (croissant)
+    // Lune : disque évidé par un disque couleur surface (croissant, agrandi)
     graphics_context_set_fill_color(ctx, icon);
-    graphics_fill_circle(ctx, c, 5);
+    graphics_fill_circle(ctx, c, 6);
     graphics_context_set_fill_color(ctx, surface);
-    graphics_fill_circle(ctx, GPoint(c.x + 3, c.y - 2), 5);
+    graphics_fill_circle(ctx, GPoint(c.x + 4, c.y - 2), 6);
   }
 }
 
@@ -193,24 +189,31 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   }
 #endif
 
-  // Icône jour/nuit (coin haut-droit de la zone de contenu).
-  // Donnée réelle de l'API si dispo, sinon heuristique 6h-20h.
-  bool day = s_weather[id].valid ? s_weather[id].is_day : slam_is_day(id);
-  draw_day_night(ctx, GPoint(content.origin.x + content.size.w - PBL_IF_ROUND_ELSE(12, 18),
-                             content.origin.y + PBL_IF_ROUND_ELSE(10, 16)),
-                 day, surface, th.icon);
-
-  // 4 lignes par zone, sans rien sacrifier : en-tête, heure, champion, météo.
   const int x0 = content.origin.x, y0 = content.origin.y, w = content.size.w;
   char buf[24];
-
-  // En-tête : abréviation (jaune + compte à rebours si tournoi focus)
   bool is_focus = (focus->id == id);
-  slam_header_string(id, focus, buf, sizeof(buf));
+
+  // Icône jour/nuit (coin haut-droit, alignée verticalement sur l'en-tête).
+  // Donnée réelle de l'API si dispo, sinon heuristique 6h-20h.
+  bool day = s_weather[id].valid ? s_weather[id].is_day : slam_is_day(id);
+  draw_day_night(ctx, GPoint(x0 + w - PBL_IF_ROUND_ELSE(13, 19),
+                             y0 + PBL_IF_ROUND_ELSE(11, 18)),
+                 day, surface, th.icon);
+
+  // En-tête : abréviation centrée (accent si tournoi focus)
   graphics_context_set_text_color(ctx, is_focus ? th.accent : th.ink);
-  graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+  graphics_draw_text(ctx, SLAMS[id].abbr, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
                      GRect(x0, y0 + PBL_IF_ROUND_ELSE(0, 8), w, 22),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+
+  // Compte à rebours plus petit, au coin haut-gauche (tournoi focus)
+  if (is_focus) {
+    slam_countdown_string(focus, buf, sizeof(buf));
+    graphics_context_set_text_color(ctx, th.accent);
+    graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                       GRect(x0 + 2, y0 + PBL_IF_ROUND_ELSE(3, 10), w - 4, 16),
+                       GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  }
 
   // Heure locale (élément principal)
   slam_time_string(id, buf, sizeof(buf));
