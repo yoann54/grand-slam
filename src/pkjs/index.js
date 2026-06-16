@@ -46,7 +46,7 @@ function fetchWeather() {
   var key = apiKey(cfg);
   var units = cfg.units || 'metric';
   var temps = [0, 0, 0, 0];
-  var conds = [0, 0, 0, 0];
+  var conds = ['', '', '', ''];
   var tz = [0, 0, 0, 0];
   var isDay = [1, 1, 1, 1];
   var done = 0;
@@ -58,7 +58,7 @@ function fetchWeather() {
       done++;
       if (!err && data && data.main) {
         temps[i] = Math.round(data.main.temp);
-        conds[i] = (data.weather && data.weather[0]) ? data.weather[0].id : 0;
+        conds[i] = (data.weather && data.weather[0]) ? (data.weather[0].main || '') : '';
         tz[i] = data.timezone || 0; // décalage UTC en secondes (DST inclus)
         var icon = (data.weather && data.weather[0]) ? data.weather[0].icon : '';
         isDay[i] = (icon.charAt(icon.length - 1) === 'n') ? 0 : 1;
@@ -79,6 +79,7 @@ function sendWeather(temps, conds, tz, isDay) {
     msg['TEMP_' + i] = temps[i];
     msg['TZ_' + i] = tz[i];
     msg['DAY_' + i] = isDay[i];
+    msg['COND_' + i] = String(conds[i] || '');
   }
   Pebble.sendAppMessage(msg,
     function () { console.log('Weather sent: ' + JSON.stringify(temps)); },

@@ -14,6 +14,9 @@ static int32_t s_tz_offset[SLAM_COUNT];
 // Vainqueur de la dernière édition (selon le tour ATP/WTA choisi en config).
 static char s_winner[SLAM_COUNT][20];
 
+// Mot de condition météo (ex: "Clouds", "Rain") reçu de l'API.
+static char s_cond[SLAM_COUNT][16];
+
 // ---------------------------------------------------------------------------
 // Helpers temps
 // ---------------------------------------------------------------------------
@@ -42,10 +45,15 @@ static bool slam_is_day(SlamId id) {
   return h >= 6 && h < 20;
 }
 
-// Ligne température : "24°" si météo dispo, sinon nom de la ville (avant 1re synchro).
+// Ligne météo : "Clouds 24°" si dispo (mot de condition + température),
+// sinon juste "24°", sinon le nom de la ville (avant la 1re synchro).
 static void slam_temp_string(SlamId id, char *buf, size_t len) {
   if (s_weather[id].valid) {
-    snprintf(buf, len, "%d°", s_weather[id].temp);
+    if (s_cond[id][0] != '\0') {
+      snprintf(buf, len, "%s %d°", s_cond[id], s_weather[id].temp);
+    } else {
+      snprintf(buf, len, "%d°", s_weather[id].temp);
+    }
   } else {
     snprintf(buf, len, "%s", SLAMS[id].city);
   }
@@ -161,7 +169,7 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   // Champion de la dernière édition (en jaune, masqué tant que non reçu)
   if (s_winner[id][0] != '\0') {
     graphics_context_set_text_color(ctx, GColorYellow);
-    graphics_draw_text(ctx, s_winner[id], fonts_get_system_font(FONT_KEY_GOTHIC_14),
+    graphics_draw_text(ctx, s_winner[id], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                        GRect(x0, y0 + PBL_IF_ROUND_ELSE(40, 64), w, 18),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
@@ -169,8 +177,8 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   // Météo (température, ou ville avant la 1re synchro)
   slam_temp_string(id, buf, sizeof(buf));
   graphics_context_set_text_color(ctx, s->text);
-  graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_14),
-                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(54, 90), w, 18),
+  graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(52, 84), w, 18),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
@@ -235,6 +243,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   const uint32_t tz_k[4]   = { MESSAGE_KEY_TZ_0,   MESSAGE_KEY_TZ_1,   MESSAGE_KEY_TZ_2,   MESSAGE_KEY_TZ_3 };
   const uint32_t day_k[4]  = { MESSAGE_KEY_DAY_0,  MESSAGE_KEY_DAY_1,  MESSAGE_KEY_DAY_2,  MESSAGE_KEY_DAY_3 };
   const uint32_t win_k[4]  = { MESSAGE_KEY_WIN_0,  MESSAGE_KEY_WIN_1,  MESSAGE_KEY_WIN_2,  MESSAGE_KEY_WIN_3 };
+  const uint32_t cond_k[4] = { MESSAGE_KEY_COND_0, MESSAGE_KEY_COND_1, MESSAGE_KEY_COND_2, MESSAGE_KEY_COND_3 };
 
   for (int i = 0; i < SLAM_COUNT; i++) {
     Tuple *t;
@@ -251,6 +260,10 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
     if ((t = dict_find(iter, win_k[i]))) {
       strncpy(s_winner[i], t->value->cstring, sizeof(s_winner[i]) - 1);
       s_winner[i][sizeof(s_winner[i]) - 1] = '\0';
+    }
+    if ((t = dict_find(iter, cond_k[i]))) {
+      strncpy(s_cond[i], t->value->cstring, sizeof(s_cond[i]) - 1);
+      s_cond[i][sizeof(s_cond[i]) - 1] = '\0';
     }
   }
   if (s_court_layer) {
