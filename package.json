@@ -1,0 +1,35 @@
+{
+  "name": "grand-slam",
+  "author": "Yoann",
+  "version": "1.0.0",
+  "keywords": ["pebble-app", "watchface", "tennis", "grand-slam"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Grand Slam",
+    "uuid": "1aa5ed7e-f6ea-41b2-8c0c-0b878b6196bd",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "capabilities": ["configurable"],
+    "targetPlatforms": [
+      "basalt",
+      "chalk",
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "messageKeys": [
+      "TEMP[4]",
+      "COND[4]",
+      "TZ_OFFSET[4]",
+      "IS_DAY[4]",
+      "WINNER[4]",
+      "TEMP_UNIT",
+      "WEATHER_READY"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}

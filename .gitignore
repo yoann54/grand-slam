@@ -1,0 +1,13 @@
+# Build
+build/
+*.pbw
+.lock-waf*
+
+# Dépendances JS
+node_modules/
+
+# Captures d'écran auto de l'émulateur
+pebble_screenshot_*.png
+
+# Divers
+.DS_Store
