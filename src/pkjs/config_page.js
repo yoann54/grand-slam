@@ -23,6 +23,9 @@ var I18N = {
     winner: 'Vainqueur affiché (dernière édition)',
     atp: 'ATP (messieurs)',
     wta: 'WTA (dames)',
+    theme: 'Thème',
+    dark: 'Sombre',
+    light: 'Clair',
     save: 'Enregistrer',
     support: '☕ Soutenir le développeur'
   },
@@ -37,6 +40,9 @@ var I18N = {
     winner: 'Champion shown (latest edition)',
     atp: 'ATP (men)',
     wta: 'WTA (women)',
+    theme: 'Theme',
+    dark: 'Dark',
+    light: 'Light',
     save: 'Save',
     support: '☕ Support the developer'
   }
@@ -58,13 +64,17 @@ var PAGE_JS = [
   'byId("lblWinner").textContent=T.winner;',
   'byId("optAtp").textContent=T.atp;',
   'byId("optWta").textContent=T.wta;',
+  'byId("lblTheme").textContent=T.theme;',
+  'byId("optDark").textContent=T.dark;',
+  'byId("optLight").textContent=T.light;',
   'byId("save").textContent=T.save;',
   'byId("support").textContent=T.support;',
   'byId("apiKey").value=D.apiKey||"";',
   'byId("units").value=D.units||"metric";',
   'byId("tour").value=D.tour||"atp";',
+  'byId("theme").value=D.theme||"dark";',
   'byId("save").addEventListener("click",function(){',
-  'var out={apiKey:byId("apiKey").value.trim(),units:byId("units").value,tour:byId("tour").value};',
+  'var out={apiKey:byId("apiKey").value.trim(),units:byId("units").value,tour:byId("tour").value,theme:byId("theme").value};',
   'document.location="pebblejs://close#"+encodeURIComponent(JSON.stringify(out));',
   '});',
   '})();'
@@ -87,6 +97,7 @@ function buildConfigPage(cfg) {
     apiKey: cfg.apiKey || '',
     units: cfg.units || 'metric',
     tour: cfg.tour || 'atp',
+    theme: cfg.theme || 'dark',
     i18n: I18N
   };
 
@@ -103,6 +114,8 @@ function buildConfigPage(cfg) {
     '<select id="units"><option id="optC" value="metric"></option><option id="optF" value="imperial"></option></select>',
     '<label id="lblWinner"></label>',
     '<select id="tour"><option id="optAtp" value="atp"></option><option id="optWta" value="wta"></option></select>',
+    '<label id="lblTheme"></label>',
+    '<select id="theme"><option id="optDark" value="dark"></option><option id="optLight" value="light"></option></select>',
     '<button id="save"></button>',
     '<a id="support" href="https://paypal.me/yoadadev" target="_blank" rel="noopener" class="support"></a>',
     '<script>var D=', JSON.stringify(data), ';</script>',

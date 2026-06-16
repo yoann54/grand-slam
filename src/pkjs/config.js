@@ -26,7 +26,8 @@ function defaults() {
     version: SCHEMA_VERSION,
     apiKey: '',          // clé OpenWeatherMap (reste sur le téléphone)
     units: 'metric',     // 'metric' = °C, 'imperial' = °F
-    tour: 'atp'          // 'atp' (messieurs) ou 'wta' (dames) pour le vainqueur affiché
+    tour: 'atp',         // 'atp' (messieurs) ou 'wta' (dames) pour le vainqueur affiché
+    theme: 'dark'        // 'dark' (sombre) ou 'light' (clair)
   };
 }
 

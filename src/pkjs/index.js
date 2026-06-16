@@ -129,6 +129,12 @@ function sendWinners(cfg) {
     function (e) { console.log('Winners send failed: ' + JSON.stringify(e)); });
 }
 
+function sendSettings(cfg) {
+  Pebble.sendAppMessage({ 'THEME': cfg.theme === 'light' ? 1 : 0 },
+    function () { console.log('Settings sent: theme=' + cfg.theme); },
+    function (e) { console.log('Settings send failed: ' + JSON.stringify(e)); });
+}
+
 // ---- Page de réglages -------------------------------------------------------
 Pebble.addEventListener('showConfiguration', function () {
   var cfg = config.load();
@@ -151,11 +157,13 @@ Pebble.addEventListener('webviewclosed', function (e) {
   if (typeof s.apiKey === 'string') { cfg.apiKey = s.apiKey; }
   if (s.units === 'metric' || s.units === 'imperial') { cfg.units = s.units; }
   if (s.tour === 'atp' || s.tour === 'wta') { cfg.tour = s.tour; }
+  if (s.theme === 'dark' || s.theme === 'light') { cfg.theme = s.theme; }
   config.save(cfg);
-  console.log('settings saved: units=' + cfg.units + ' tour=' + cfg.tour);
+  console.log('settings saved: units=' + cfg.units + ' tour=' + cfg.tour + ' theme=' + cfg.theme);
 
   fetchWeather();      // re-fetch avec les nouvelles unités / clé
   sendWinners(cfg);    // re-envoyer selon le tour choisi
+  sendSettings(cfg);   // thème
 });
 
 // ---- Cycle de vie -----------------------------------------------------------
@@ -163,6 +171,7 @@ Pebble.addEventListener('ready', function () {
   var cfg = config.load();
   config.save(cfg); // persiste un blob de 1er lancement / migré
   console.log('PebbleKit JS ready');
+  sendSettings(cfg);                                 // thème
   sendWinners(cfg);                                  // affichage instantané (cache/fallback)
   refreshWinners(function () { sendWinners(cfg); }); // puis MAJ depuis GitHub si dispo
   fetchWeather();

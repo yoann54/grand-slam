@@ -17,6 +17,9 @@ static char s_winner[SLAM_COUNT][20];
 // Mot de condition météo (ex: "Clouds", "Rain") reçu de l'API.
 static char s_cond[SLAM_COUNT][16];
 
+// Thème clair (true) ou sombre (false, défaut), reçu de la config.
+static bool s_theme_light = false;
+
 // ---------------------------------------------------------------------------
 // Helpers temps
 // ---------------------------------------------------------------------------
@@ -75,12 +78,12 @@ static void slam_header_string(SlamId id, const SlamFocus *focus, char *buf, siz
 // ---------------------------------------------------------------------------
 // Icône jour/nuit
 // ---------------------------------------------------------------------------
-static void draw_day_night(GContext *ctx, GPoint c, bool day, GColor surface) {
+static void draw_day_night(GContext *ctx, GPoint c, bool day, GColor surface, GColor icon) {
   if (day) {
     // Soleil : disque + rayons
-    graphics_context_set_fill_color(ctx, GColorYellow);
+    graphics_context_set_fill_color(ctx, icon);
     graphics_fill_circle(ctx, c, 4);
-    graphics_context_set_stroke_color(ctx, GColorYellow);
+    graphics_context_set_stroke_color(ctx, icon);
     graphics_context_set_stroke_width(ctx, 1);
     for (int i = 0; i < 8; i++) {
       int32_t a = TRIG_MAX_ANGLE * i / 8;
@@ -91,8 +94,8 @@ static void draw_day_night(GContext *ctx, GPoint c, bool day, GColor surface) {
       graphics_draw_line(ctx, p1, p2);
     }
   } else {
-    // Lune : disque pâle évidé par un disque couleur surface (croissant)
-    graphics_context_set_fill_color(ctx, GColorPastelYellow);
+    // Lune : disque évidé par un disque couleur surface (croissant)
+    graphics_context_set_fill_color(ctx, icon);
     graphics_fill_circle(ctx, c, 5);
     graphics_context_set_fill_color(ctx, surface);
     graphics_fill_circle(ctx, GPoint(c.x + 3, c.y - 2), 5);
@@ -103,10 +106,11 @@ static void draw_day_night(GContext *ctx, GPoint c, bool day, GColor surface) {
 // Rendu d'une zone (un quadrant = un Grand Chelem)
 // ---------------------------------------------------------------------------
 static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus) {
-  const Slam *s = &SLAMS[id];
+  Theme th = slam_theme(s_theme_light);
+  GColor surface = slam_surface(id, s_theme_light);
 
   // Fond = couleur de la surface
-  graphics_context_set_fill_color(ctx, s->surface);
+  graphics_context_set_fill_color(ctx, surface);
   graphics_fill_rect(ctx, q, 0, GCornerNone);
 
   // Sur écran rond (chalk), le contenu est resserré vers le centre (le filet),
@@ -128,13 +132,13 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   // Lignes de court : bordure blanche inset (rectangulaire uniquement ;
   // sur écran rond l'anneau "camembert" est dessiné globalement, voir court_update_proc).
 #if !defined(PBL_ROUND)
-  graphics_context_set_stroke_color(ctx, s->text);
+  graphics_context_set_stroke_color(ctx, th.ink);
   graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_rect(ctx, grect_inset(q, GEdgeInsets(6)));
 
-  // Surlignage du tournoi en cours / prochain : cadre jaune
+  // Surlignage du tournoi en cours / prochain : cadre accent
   if (focus->id == id) {
-    graphics_context_set_stroke_color(ctx, GColorYellow);
+    graphics_context_set_stroke_color(ctx, th.accent);
     graphics_context_set_stroke_width(ctx, 3);
     graphics_draw_rect(ctx, grect_inset(q, GEdgeInsets(2)));
   }
@@ -145,7 +149,7 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   bool day = s_weather[id].valid ? s_weather[id].is_day : slam_is_day(id);
   draw_day_night(ctx, GPoint(content.origin.x + content.size.w - PBL_IF_ROUND_ELSE(12, 18),
                              content.origin.y + PBL_IF_ROUND_ELSE(10, 16)),
-                 day, s->surface);
+                 day, surface, th.icon);
 
   // 4 lignes par zone, sans rien sacrifier : en-tête, heure, champion, météo.
   const int x0 = content.origin.x, y0 = content.origin.y, w = content.size.w;
@@ -154,21 +158,21 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   // En-tête : abréviation (jaune + compte à rebours si tournoi focus)
   bool is_focus = (focus->id == id);
   slam_header_string(id, focus, buf, sizeof(buf));
-  graphics_context_set_text_color(ctx, is_focus ? GColorYellow : s->text);
+  graphics_context_set_text_color(ctx, is_focus ? th.accent : th.ink);
   graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
                      GRect(x0, y0 + PBL_IF_ROUND_ELSE(0, 8), w, 22),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   // Heure locale (élément principal)
   slam_time_string(id, buf, sizeof(buf));
-  graphics_context_set_text_color(ctx, s->text);
+  graphics_context_set_text_color(ctx, th.ink);
   graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
                      GRect(x0, y0 + PBL_IF_ROUND_ELSE(18, 34), w, 30),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   // Champion de la dernière édition (en jaune, masqué tant que non reçu)
   if (s_winner[id][0] != '\0') {
-    graphics_context_set_text_color(ctx, GColorYellow);
+    graphics_context_set_text_color(ctx, th.accent);
     graphics_draw_text(ctx, s_winner[id], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                        GRect(x0, y0 + PBL_IF_ROUND_ELSE(40, 64), w, 18),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
@@ -176,7 +180,7 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
 
   // Météo (température, ou ville avant la 1re synchro)
   slam_temp_string(id, buf, sizeof(buf));
-  graphics_context_set_text_color(ctx, s->text);
+  graphics_context_set_text_color(ctx, th.ink);
   graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                      GRect(x0, y0 + PBL_IF_ROUND_ELSE(52, 84), w, 18),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
@@ -204,22 +208,24 @@ static void court_update_proc(Layer *layer, GContext *ctx) {
   draw_zone(ctx, bl, SLAM_WIM, &focus);
   draw_zone(ctx, br, SLAM_US, &focus);
 
+  Theme th = slam_theme(s_theme_light);
+
   // Le "filet" : barre horizontale épaisse + ligne centrale verticale
-  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_context_set_fill_color(ctx, th.ink);
   graphics_fill_rect(ctx, GRect(0, midy - 2, b.size.w, 4), 0, GCornerNone);
   graphics_fill_rect(ctx, GRect(midx - 1, 0, 2, b.size.h), 0, GCornerNone);
 
 #if defined(PBL_ROUND)
-  // Camembert : anneau blanc sur le pourtour, et arc jaune sur la portion
+  // Camembert : anneau (encre) sur le pourtour, et arc accent sur la portion
   // du tournoi en cours / prochain. Angles (0° = haut, sens horaire) :
   //   AO=270-360 (haut-gauche), RG=0-90 (haut-droit),
   //   W=180-270 (bas-gauche),   US=90-180 (bas-droit).
-  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_context_set_fill_color(ctx, th.ink);
   graphics_fill_radial(ctx, b, GOvalScaleModeFitCircle, 3, 0, TRIG_MAX_ANGLE);
 
   static const int focus_start[SLAM_COUNT] = { 270, 0, 180, 90 };
   static const int focus_end[SLAM_COUNT]   = { 360, 90, 270, 180 };
-  graphics_context_set_fill_color(ctx, GColorYellow);
+  graphics_context_set_fill_color(ctx, th.accent);
   graphics_fill_radial(ctx, b, GOvalScaleModeFitCircle, 6,
                        DEG_TO_TRIGANGLE(focus_start[focus.id]),
                        DEG_TO_TRIGANGLE(focus_end[focus.id]));
@@ -227,9 +233,9 @@ static void court_update_proc(Layer *layer, GContext *ctx) {
 
   // Balle de tennis au centre du filet
   GPoint c = GPoint(midx, midy);
-  graphics_context_set_fill_color(ctx, GColorYellow);
+  graphics_context_set_fill_color(ctx, th.ball);
   graphics_fill_circle(ctx, c, 8);
-  graphics_context_set_stroke_color(ctx, GColorWhite);
+  graphics_context_set_stroke_color(ctx, th.ink);
   graphics_context_set_stroke_width(ctx, 1);
   graphics_draw_circle(ctx, c, 8);
 }
@@ -266,6 +272,15 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
       s_cond[i][sizeof(s_cond[i]) - 1] = '\0';
     }
   }
+
+  Tuple *theme_t = dict_find(iter, MESSAGE_KEY_THEME);
+  if (theme_t) {
+    s_theme_light = (theme_t->value->int32 != 0);
+    if (s_window) {
+      window_set_background_color(s_window, slam_theme(s_theme_light).bg);
+    }
+  }
+
   if (s_court_layer) {
     layer_mark_dirty(s_court_layer);
   }

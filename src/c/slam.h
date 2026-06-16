@@ -14,13 +14,25 @@ typedef enum {
 typedef struct {
   const char *abbr;        // "AO", "RG", "W", "US"
   const char *city;        // "Melbourne", ...
-  GColor surface;          // couleur de la surface du court
-  GColor text;             // couleur du texte/lignes lisible sur la surface
+  GColor surface_dark;     // surface (thème sombre : couleurs vives)
+  GColor surface_light;    // surface (thème clair : pastel)
   int32_t tz_offset_sec;   // décalage UTC provisoire (sera remplacé par le JS météo)
   uint8_t start_month;     // mois de début du tournoi (1-12)
   uint8_t start_day;       // jour de début
   uint8_t duration_days;   // durée approximative du tournoi
 } Slam;
+
+// Palette commune dépendant du thème (sombre / clair).
+typedef struct {
+  GColor ink;     // texte + lignes de court + filet
+  GColor accent;  // champion + surlignage du tournoi focus
+  GColor bg;      // fond (coins de l'écran rond / fenêtre)
+  GColor ball;    // balle de tennis
+  GColor icon;    // icône jour/nuit (soleil)
+} Theme;
+
+Theme slam_theme(bool light);
+GColor slam_surface(SlamId id, bool light);
 
 // Tournoi mis en avant (en cours ou prochain) + compte à rebours.
 typedef struct {
