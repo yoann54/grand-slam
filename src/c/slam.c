@@ -78,12 +78,21 @@ static int day_of_year(int month, int day) {
 // Détermine le tournoi à mettre en avant : celui en cours aujourd'hui, sinon
 // le prochain à venir (avec le nombre de jours avant son début).
 SlamFocus slam_focus(struct tm *today) {
+  return slam_focus_ex(today, NULL);
+}
+
+SlamFocus slam_focus_ex(struct tm *today, const uint16_t *override_md) {
   int today_yd = day_of_year(today->tm_mon + 1, today->tm_mday);
 
   SlamFocus focus = { .id = SLAM_AO, .live = false, .days_until = 9999 };
 
   for (int i = 0; i < SLAM_COUNT; i++) {
-    int start = day_of_year(SLAMS[i].start_month, SLAMS[i].start_day);
+    int month = SLAMS[i].start_month, day = SLAMS[i].start_day;
+    if (override_md && override_md[i] != 0) {
+      month = override_md[i] / 100;
+      day = override_md[i] % 100;
+    }
+    int start = day_of_year(month, day);
     int end = start + SLAMS[i].duration_days;
 
     // En cours ?

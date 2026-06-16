@@ -109,7 +109,8 @@ function refreshWinners(cb) {
   xhrJSON(WINNERS_URL, function (err, data) {
     if (!err && validWinners(data)) {
       try {
-        localStorage.setItem(WINNERS_CACHE_KEY, JSON.stringify({ atp: data.atp, wta: data.wta }));
+        localStorage.setItem(WINNERS_CACHE_KEY,
+          JSON.stringify({ atp: data.atp, wta: data.wta, dates: data.dates || null }));
         console.log('Winners updated from remote (' + (data.updated || '?') + ')');
       } catch (e) { /* storage plein → on garde l'ancien */ }
     } else {
@@ -119,13 +120,29 @@ function refreshWinners(cb) {
   });
 }
 
+// "YYYY-MM-DD" -> mois*100+jour (ex: 0524 -> 524). 0 si invalide.
+function parseMonthDay(s) {
+  if (!s || typeof s !== 'string') { return 0; }
+  var m = s.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (!m) { return 0; }
+  return parseInt(m[1], 10) * 100 + parseInt(m[2], 10);
+}
+
 function sendWinners(cfg) {
   var w = activeWinners();
   var names = (cfg.tour === 'wta') ? w.wta : w.atp;
+  var order = ['ao', 'rg', 'wim', 'us'];
   var msg = {};
-  for (var i = 0; i < 4; i++) { msg['WIN_' + i] = String(names[i] || ''); }
+  for (var i = 0; i < 4; i++) {
+    msg['WIN_' + i] = String(names[i] || '');
+    // Date de début de la prochaine édition (si fournie dans winners.json)
+    if (w.dates) {
+      var md = parseMonthDay(w.dates[order[i]]);
+      if (md) { msg['DSTART_' + i] = md; }
+    }
+  }
   Pebble.sendAppMessage(msg,
-    function () { console.log('Winners sent (' + cfg.tour + '): ' + JSON.stringify(names)); },
+    function () { console.log('Winners/dates sent (' + cfg.tour + '): ' + JSON.stringify(names)); },
     function (e) { console.log('Winners send failed: ' + JSON.stringify(e)); });
 }
 

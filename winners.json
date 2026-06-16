@@ -1,6 +1,22 @@
 {
-  "_comment": "Vainqueurs de la derniere edition de chaque Grand Chelem. EDITER ce fichier apres chaque tournoi puis pousser sur GitHub : toutes les montres se mettent a jour automatiquement (pas besoin de republier l'app). Ordre : [Australian Open, Roland-Garros, Wimbledon, US Open]. Noms de famille, sans accents (police Pebble).",
+  "_comment": "Vainqueurs ET dates de la prochaine edition de chaque Grand Chelem. EDITER apres chaque tournoi puis pousser sur GitHub : toutes les montres se mettent a jour (pas besoin de republier l'app). Ordre des tableaux : [Australian Open, Roland-Garros, Wimbledon, US Open]. Noms de famille sans accents (police Pebble). dates = date de DEBUT (YYYY-MM-DD) de la prochaine edition de chaque tournoi (a mettre a jour chaque annee pour un compte a rebours juste).",
   "updated": "2025",
-  "atp": ["Alcaraz", "Zverev", "Sinner", "Alcaraz"],
-  "wta": ["Rybakina", "Andreeva", "Swiatek", "Sabalenka"]
+  "atp": [
+    "Alcaraz",
+    "Zverev",
+    "Sinner",
+    "Alcaraz"
+  ],
+  "wta": [
+    "Rybakina",
+    "Andreeva",
+    "Swiatek",
+    "Sabalenka"
+  ],
+  "dates": {
+    "ao": "2026-01-19",
+    "rg": "2026-05-24",
+    "wim": "2026-06-29",
+    "us": "2026-08-31"
+  }
 }

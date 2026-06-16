@@ -1,7 +1,7 @@
 {
   "name": "grand-slam",
   "author": "Yoann",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "keywords": ["pebble-app", "watchface", "tennis", "grand-slam"],
   "private": true,
   "dependencies": {},
@@ -25,6 +25,7 @@
       "DAY_0", "DAY_1", "DAY_2", "DAY_3",
       "WIN_0", "WIN_1", "WIN_2", "WIN_3",
       "COND_0", "COND_1", "COND_2", "COND_3",
+      "DSTART_0", "DSTART_1", "DSTART_2", "DSTART_3",
       "THEME",
       "READY"
     ],

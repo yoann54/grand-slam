@@ -43,6 +43,10 @@ typedef struct {
 
 SlamFocus slam_focus(struct tm *today);
 
+// Comme slam_focus mais override_md[i] = mois*100+jour de début de l'édition à
+// venir (0 = date par défaut de SLAMS). Passer NULL pour tout laisser par défaut.
+SlamFocus slam_focus_ex(struct tm *today, const uint16_t *override_md);
+
 // Données météo reçues du téléphone (PebbleKit JS). Remplies en Phase 3.
 typedef struct {
   int16_t temp;            // température (unité selon config)

@@ -20,6 +20,10 @@ static char s_cond[SLAM_COUNT][16];
 // Thème clair (true) ou sombre (false, défaut), reçu de la config.
 static bool s_theme_light = false;
 
+// Date de début (mois*100+jour) de la prochaine édition de chaque tournoi,
+// reçue du winners.json (0 = utiliser la date par défaut de SLAMS).
+static uint16_t s_start_md[SLAM_COUNT];
+
 // ---------------------------------------------------------------------------
 // Helpers temps
 // ---------------------------------------------------------------------------
@@ -196,7 +200,7 @@ static void court_update_proc(Layer *layer, GContext *ctx) {
 
   time_t now = time(NULL);
   struct tm today = *localtime(&now);
-  SlamFocus focus = slam_focus(&today);
+  SlamFocus focus = slam_focus_ex(&today, s_start_md);
 
   GRect tl = GRect(0, 0, midx, midy);
   GRect tr = GRect(midx, 0, b.size.w - midx, midy);
@@ -250,6 +254,7 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
   const uint32_t day_k[4]  = { MESSAGE_KEY_DAY_0,  MESSAGE_KEY_DAY_1,  MESSAGE_KEY_DAY_2,  MESSAGE_KEY_DAY_3 };
   const uint32_t win_k[4]  = { MESSAGE_KEY_WIN_0,  MESSAGE_KEY_WIN_1,  MESSAGE_KEY_WIN_2,  MESSAGE_KEY_WIN_3 };
   const uint32_t cond_k[4] = { MESSAGE_KEY_COND_0, MESSAGE_KEY_COND_1, MESSAGE_KEY_COND_2, MESSAGE_KEY_COND_3 };
+  const uint32_t dstart_k[4] = { MESSAGE_KEY_DSTART_0, MESSAGE_KEY_DSTART_1, MESSAGE_KEY_DSTART_2, MESSAGE_KEY_DSTART_3 };
 
   for (int i = 0; i < SLAM_COUNT; i++) {
     Tuple *t;
@@ -270,6 +275,9 @@ static void inbox_received(DictionaryIterator *iter, void *context) {
     if ((t = dict_find(iter, cond_k[i]))) {
       strncpy(s_cond[i], t->value->cstring, sizeof(s_cond[i]) - 1);
       s_cond[i][sizeof(s_cond[i]) - 1] = '\0';
+    }
+    if ((t = dict_find(iter, dstart_k[i]))) {
+      s_start_md[i] = t->value->int32;
     }
   }
 
