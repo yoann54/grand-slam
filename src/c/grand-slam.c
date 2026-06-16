@@ -52,12 +52,57 @@ static bool slam_is_day(SlamId id) {
   return h >= 6 && h < 20;
 }
 
-// Ligne météo : "Clouds 24°" si dispo (mot de condition + température),
+// Index de langue selon la locale de la montre (colonnes de la table ci-dessous).
+// 0=EN, 1=FR, 2=ES, 3=DE, 4=IT. Toute autre langue retombe sur l'anglais.
+static int lang_index(void) {
+  const char *l = i18n_get_system_locale();
+  if (!l) { return 0; }
+  if (l[0] == 'f' && l[1] == 'r') { return 1; }
+  if (l[0] == 'e' && l[1] == 's') { return 2; }
+  if (l[0] == 'd' && l[1] == 'e') { return 3; }
+  if (l[0] == 'i' && l[1] == 't') { return 4; }
+  return 0;
+}
+
+// Traduit le mot de condition OpenWeatherMap (anglais) selon la langue de la
+// montre. Mots courts (sans accents) ; condition inconnue → laissée en anglais.
+static const char *localize_cond(const char *en) {
+  int lg = lang_index();
+  if (en[0] == '\0' || lg == 0) {
+    return en;
+  }
+  //                         EN            FR           ES           DE           IT
+  static const char *const map[][5] = {
+    {"Clear",        "Clair",      "Despejado", "Klar",      "Sereno"},
+    {"Clouds",       "Nuageux",    "Nubes",     "Bewolkt",   "Nuvoloso"},
+    {"Rain",         "Pluie",      "Lluvia",    "Regen",     "Pioggia"},
+    {"Drizzle",      "Bruine",     "Llovizna",  "Niesel",    "Pioggerella"},
+    {"Thunderstorm", "Orage",      "Tormenta",  "Gewitter",  "Temporale"},
+    {"Snow",         "Neige",      "Nieve",     "Schnee",    "Neve"},
+    {"Mist",         "Brume",      "Niebla",    "Nebel",     "Foschia"},
+    {"Fog",          "Brouillard", "Niebla",    "Nebel",     "Nebbia"},
+    {"Haze",         "Brume",      "Bruma",     "Dunst",     "Foschia"},
+    {"Smoke",        "Fumee",      "Humo",      "Rauch",     "Fumo"},
+    {"Dust",         "Poussiere",  "Polvo",     "Staub",     "Polvere"},
+    {"Sand",         "Sable",      "Arena",     "Sand",      "Sabbia"},
+    {"Tornado",      "Tornade",    "Tornado",   "Tornado",   "Tornado"},
+    {"Squall",       "Rafales",    "Rafaga",    "Boe",       "Raffica"},
+    {"Ash",          "Cendres",    "Ceniza",    "Asche",     "Cenere"},
+  };
+  for (unsigned i = 0; i < ARRAY_LENGTH(map); i++) {
+    if (strcmp(en, map[i][0]) == 0) {
+      return map[i][lg];
+    }
+  }
+  return en;
+}
+
+// Ligne météo : "Nuageux 24°" si dispo (condition traduite + température),
 // sinon juste "24°", sinon le nom de la ville (avant la 1re synchro).
 static void slam_temp_string(SlamId id, char *buf, size_t len) {
   if (s_weather[id].valid) {
     if (s_cond[id][0] != '\0') {
-      snprintf(buf, len, "%s %d°", s_cond[id], s_weather[id].temp);
+      snprintf(buf, len, "%s %d°", localize_cond(s_cond[id]), s_weather[id].temp);
     } else {
       snprintf(buf, len, "%d°", s_weather[id].temp);
     }
