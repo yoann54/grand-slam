@@ -1,7 +1,7 @@
 {
   "name": "grand-slam",
   "author": "Yoann",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "keywords": ["pebble-app", "watchface", "tennis", "grand-slam"],
   "private": true,
   "dependencies": {},
