@@ -64,12 +64,31 @@ ouvre les réglages (clé API, unités, ATP/WTA)._
 | `icon-small-48.png` | 48×48 | Petite icône appstore |
 | `menu-icon-25.png` | 25×25 | Icône menu (optionnelle pour une watchface) |
 | `banner-720x320.png` | 720×320 | Bannière marketing |
-| `screenshots/emery-idle.png` | 200×228 | Collection emery (Pebble Time 2) |
-| `screenshots/basalt-idle.png` | 144×168 | Collection basalt |
-| `screenshots/chalk-idle.png` | 180×180 | Collection chalk (rond) |
+| `screenshots/emery_idle.png` | 200×228 | Collection emery (Pebble Time 2) |
+| `screenshots/basalt_idle.png` | 144×168 | Collection basalt |
+| `screenshots/chalk_idle.png` | 180×180 | Collection chalk (rond) |
+
+⚠️ **Nom des captures = `<plateforme>_xxx.png`** (underscore obligatoire) : `pebble publish`
+déduit la plateforme via `basename.split("_")`. `emery-idle.png` est refusé, `emery_idle.png` OK.
 
 Régénérer icônes/bannière : `python3 tools/gen_assets.py`.
-Recapturer une plateforme : `pebble install --emulator <p> && pebble screenshot --emulator <p> store/screenshots/<p>-idle.png`.
+Recapturer une plateforme : `pebble install --emulator <p> && pebble screenshot --emulator <p> store/screenshots/<p>_idle.png`.
+
+## Publier en une commande (CLI)
+
+```sh
+pebble publish --is-published --non-interactive --no-gif-all-platforms \
+  --name "Grand Slam" --version "1.0.0" --category "Faces" \
+  --source "https://github.com/yoann54/grand-slam" \
+  --description "..." --release-notes "..." \
+  --icon-small store/icon-small-48.png --icon-large store/icon-large-144.png \
+  --screenshots store/screenshots/emery_idle.png store/screenshots/basalt_idle.png store/screenshots/chalk_idle.png
+```
+
+**Publié le 2026-06-16** → app : <https://apps.rePebble.com/1daaaed318be4c32b8033367> ·
+dashboard (changelog) : <https://appstore-api.repebble.com/dashboard>.
+Pour une mise à jour : bump `version` dans `package.json`, `pebble build`, puis relancer
+`pebble publish` (mappé par UUID → met à jour l'app existante).
 
 ## Note : mise à jour des vainqueurs
 
@@ -84,3 +103,4 @@ fichier et `git push` — toutes les montres se mettent à jour au prochain lanc
 - [x] Vainqueurs auto-update via winners.json GitHub
 - [ ] Test sur matériel réel (météo réelle + page de config)
 - [x] URL du code source : https://github.com/yoann54/grand-slam
+- [x] **Publié** sur l'appstore Rebble (2026-06-16, v1.0.0)
