@@ -210,8 +210,9 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   if (is_focus) {
     slam_countdown_string(focus, buf, sizeof(buf));
     graphics_context_set_text_color(ctx, th.accent);
+    // Décalé à l'intérieur de la bordure du court pour ne pas couper le "J".
     graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
-                       GRect(x0 + 2, y0 + PBL_IF_ROUND_ELSE(3, 10), w - 4, 16),
+                       GRect(x0 + PBL_IF_ROUND_ELSE(3, 10), y0 + PBL_IF_ROUND_ELSE(3, 10), w - 20, 16),
                        GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   }
 
