@@ -1,6 +1,6 @@
 {
   "_comment": "Vainqueurs de la derniere edition de chaque Grand Chelem. EDITER ce fichier apres chaque tournoi puis pousser sur GitHub : toutes les montres se mettent a jour automatiquement (pas besoin de republier l'app). Ordre : [Australian Open, Roland-Garros, Wimbledon, US Open]. Noms de famille, sans accents (police Pebble).",
   "updated": "2025",
-  "atp": ["Sinner", "Alcaraz", "Sinner", "Alcaraz"],
-  "wta": ["Keys", "Gauff", "Swiatek", "Sabalenka"]
+  "atp": ["Alcaraz", "Zverev", "Sinner", "Alcaraz"],
+  "wta": ["Rybakina", "Andreeva", "Swiatek", "Sabalenka"]
 }
