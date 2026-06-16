@@ -123,8 +123,9 @@ def make_banner(fname):
 
 
 if __name__ == "__main__":
-    make_icon(144, "icon-large-144.png")
-    make_icon(48, "icon-small-48.png")
+    make_icon(144, "icon-large-144.png")  # grande icône appstore
+    make_icon(80, "icon-small-80.png")    # petite icône (recommandée par le portail)
+    make_icon(48, "icon-small-48.png")    # variante 48 (au cas où)
     make_menu_icon(25, "menu-icon-25.png")
     make_banner("banner-720x320.png")
     print("done ->", os.path.normpath(OUT))

@@ -26,7 +26,14 @@ static struct tm slam_local_tm(SlamId id) {
 
 static void slam_time_string(SlamId id, char *buf, size_t len) {
   struct tm t = slam_local_tm(id);
-  strftime(buf, len, clock_is_24h_style() ? "%H:%M" : "%I:%M", &t);
+  if (clock_is_24h_style()) {
+    strftime(buf, len, "%H:%M", &t);
+  } else {
+    // 12h compact avec indicateur am/pm (ex: "6:47p"), pour tenir dans la zone.
+    int h = t.tm_hour % 12;
+    if (h == 0) { h = 12; }
+    snprintf(buf, len, "%d:%02d%c", h, t.tm_min, t.tm_hour < 12 ? 'a' : 'p');
+  }
 }
 
 // Jour entre 6h et 20h (heure locale du tournoi).
@@ -128,7 +135,8 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   // Icône jour/nuit (coin haut-droit de la zone de contenu).
   // Donnée réelle de l'API si dispo, sinon heuristique 6h-20h.
   bool day = s_weather[id].valid ? s_weather[id].is_day : slam_is_day(id);
-  draw_day_night(ctx, GPoint(content.origin.x + content.size.w - 12, content.origin.y + 12),
+  draw_day_night(ctx, GPoint(content.origin.x + content.size.w - PBL_IF_ROUND_ELSE(12, 18),
+                             content.origin.y + PBL_IF_ROUND_ELSE(10, 16)),
                  day, s->surface);
 
   // 4 lignes par zone, sans rien sacrifier : en-tête, heure, champion, météo.
@@ -140,21 +148,21 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   slam_header_string(id, focus, buf, sizeof(buf));
   graphics_context_set_text_color(ctx, is_focus ? GColorYellow : s->text);
   graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
-                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(-1, 2), w, 22),
+                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(0, 8), w, 22),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   // Heure locale (élément principal)
   slam_time_string(id, buf, sizeof(buf));
   graphics_context_set_text_color(ctx, s->text);
   graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
-                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(18, 26), w, 30),
+                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(18, 34), w, 30),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   // Champion de la dernière édition (en jaune, masqué tant que non reçu)
   if (s_winner[id][0] != '\0') {
     graphics_context_set_text_color(ctx, GColorYellow);
     graphics_draw_text(ctx, s_winner[id], fonts_get_system_font(FONT_KEY_GOTHIC_14),
-                       GRect(x0, y0 + PBL_IF_ROUND_ELSE(40, 58), w, 18),
+                       GRect(x0, y0 + PBL_IF_ROUND_ELSE(40, 64), w, 18),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
 
@@ -162,7 +170,7 @@ static void draw_zone(GContext *ctx, GRect q, SlamId id, const SlamFocus *focus)
   slam_temp_string(id, buf, sizeof(buf));
   graphics_context_set_text_color(ctx, s->text);
   graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_14),
-                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(54, 84), w, 18),
+                     GRect(x0, y0 + PBL_IF_ROUND_ELSE(54, 90), w, 18),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
@@ -222,22 +230,25 @@ static void court_update_proc(Layer *layer, GContext *ctx) {
 // Réception météo (PebbleKit JS)
 // ---------------------------------------------------------------------------
 static void inbox_received(DictionaryIterator *iter, void *context) {
+  // Clés individuelles par zone (objet plat envoyé par le JS).
+  const uint32_t temp_k[4] = { MESSAGE_KEY_TEMP_0, MESSAGE_KEY_TEMP_1, MESSAGE_KEY_TEMP_2, MESSAGE_KEY_TEMP_3 };
+  const uint32_t tz_k[4]   = { MESSAGE_KEY_TZ_0,   MESSAGE_KEY_TZ_1,   MESSAGE_KEY_TZ_2,   MESSAGE_KEY_TZ_3 };
+  const uint32_t day_k[4]  = { MESSAGE_KEY_DAY_0,  MESSAGE_KEY_DAY_1,  MESSAGE_KEY_DAY_2,  MESSAGE_KEY_DAY_3 };
+  const uint32_t win_k[4]  = { MESSAGE_KEY_WIN_0,  MESSAGE_KEY_WIN_1,  MESSAGE_KEY_WIN_2,  MESSAGE_KEY_WIN_3 };
+
   for (int i = 0; i < SLAM_COUNT; i++) {
     Tuple *t;
-    if ((t = dict_find(iter, MESSAGE_KEY_TEMP + i))) {
+    if ((t = dict_find(iter, temp_k[i]))) {
       s_weather[i].temp = t->value->int32;
       s_weather[i].valid = true;
     }
-    if ((t = dict_find(iter, MESSAGE_KEY_COND + i))) {
-      s_weather[i].cond = t->value->int32;
-    }
-    if ((t = dict_find(iter, MESSAGE_KEY_IS_DAY + i))) {
-      s_weather[i].is_day = (t->value->int32 != 0);
-    }
-    if ((t = dict_find(iter, MESSAGE_KEY_TZ_OFFSET + i))) {
+    if ((t = dict_find(iter, tz_k[i]))) {
       s_tz_offset[i] = t->value->int32;
     }
-    if ((t = dict_find(iter, MESSAGE_KEY_WINNER + i))) {
+    if ((t = dict_find(iter, day_k[i]))) {
+      s_weather[i].is_day = (t->value->int32 != 0);
+    }
+    if ((t = dict_find(iter, win_k[i]))) {
       strncpy(s_winner[i], t->value->cstring, sizeof(s_winner[i]) - 1);
       s_winner[i][sizeof(s_winner[i]) - 1] = '\0';
     }

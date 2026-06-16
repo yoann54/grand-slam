@@ -73,8 +73,14 @@ function fetchWeather() {
 }
 
 function sendWeather(temps, conds, tz, isDay) {
-  Pebble.sendAppMessage(
-    { 'TEMP': temps, 'COND': conds, 'TZ_OFFSET': tz, 'IS_DAY': isDay, 'WEATHER_READY': 1 },
+  // Clés individuelles (objet plat) : pas de dépendance à l'expansion des clés-tableau.
+  var msg = { 'READY': 1 };
+  for (var i = 0; i < 4; i++) {
+    msg['TEMP_' + i] = temps[i];
+    msg['TZ_' + i] = tz[i];
+    msg['DAY_' + i] = isDay[i];
+  }
+  Pebble.sendAppMessage(msg,
     function () { console.log('Weather sent: ' + JSON.stringify(temps)); },
     function (e) { console.log('Weather send failed: ' + JSON.stringify(e)); });
 }
@@ -115,7 +121,9 @@ function refreshWinners(cb) {
 function sendWinners(cfg) {
   var w = activeWinners();
   var names = (cfg.tour === 'wta') ? w.wta : w.atp;
-  Pebble.sendAppMessage({ 'WINNER': names },
+  var msg = {};
+  for (var i = 0; i < 4; i++) { msg['WIN_' + i] = String(names[i] || ''); }
+  Pebble.sendAppMessage(msg,
     function () { console.log('Winners sent (' + cfg.tour + '): ' + JSON.stringify(names)); },
     function (e) { console.log('Winners send failed: ' + JSON.stringify(e)); });
 }

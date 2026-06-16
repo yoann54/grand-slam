@@ -1,7 +1,7 @@
 {
   "name": "grand-slam",
   "author": "Yoann",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "keywords": ["pebble-app", "watchface", "tennis", "grand-slam"],
   "private": true,
   "dependencies": {},
@@ -20,13 +20,11 @@
       "watchface": true
     },
     "messageKeys": [
-      "TEMP[4]",
-      "COND[4]",
-      "TZ_OFFSET[4]",
-      "IS_DAY[4]",
-      "WINNER[4]",
-      "TEMP_UNIT",
-      "WEATHER_READY"
+      "TEMP_0", "TEMP_1", "TEMP_2", "TEMP_3",
+      "TZ_0", "TZ_1", "TZ_2", "TZ_3",
+      "DAY_0", "DAY_1", "DAY_2", "DAY_3",
+      "WIN_0", "WIN_1", "WIN_2", "WIN_3",
+      "READY"
     ],
     "resources": {
       "media": []
